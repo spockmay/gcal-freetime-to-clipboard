@@ -13,20 +13,20 @@
     "https://www.googleapis.com/*"
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
       "matches": ["*://calendar.google.com/*"],
-      "js": ["content.js"]
+      "js": ["utils.js", "content.js"]
     }
   ],  
   "oauth2": {
     "client_id": "558207973179-st52javm9ikd9uo9ld0gbs20o5lf1plj.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/calendar.readonly",
-      "https://www.googleapis.com/auth/calendar.freebusy"
+      "https://www.googleapis.com/auth/calendar.freebusy",
+      "https://www.googleapis.com/auth/calendar.settings.readonly"
     ]
   },
   "icons": {

@@ -10,11 +10,11 @@ document.addEventListener('contextmenu', () => {
     // Format to YYYYMMDD with padding
     const formatted = `${year}${month.padStart(2, '0')}${day.padStart(2, '0')}`;
     
-    console.log("Day View detected. Target Date:", formatted);
+    logger.debug("Day View detected. Target Date:", formatted);
     chrome.runtime.sendMessage({ type: "SET_TARGET_DATE", date: formatted });
   } else {
     // Optional: Notify the user they aren't in Day View
-    console.log("Not in Day View. Extension is currently optimized for Day View only.");
+    logger.debug("Not in Day View. Extension is currently optimized for Day View only.");
   }
 }, true);
 
@@ -61,7 +61,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       showToast("Availability copied to clipboard!");
     }).catch(err => {
       showToast("Error copying to clipboard.");
-      console.error(err);
+      logger.error(err);
     });
   }
 });

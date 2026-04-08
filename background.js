@@ -1,10 +1,12 @@
 // background.js
+importScripts('utils.js');
+
 let clickedDate = null; // Our "state" variable
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SET_TARGET_DATE") {
     clickedDate = message.date; // Store "YYYYMMDD"
-    console.log("Global target date updated:", clickedDate);
+    logger.debug("Global target date updated:", clickedDate);
     sendResponse({ status: "captured" });
   }
   return true;
@@ -18,13 +20,13 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["all"],
     documentUrlPatterns: ["*://calendar.google.com/*"]
   });
-  console.log("Context menu created.");
+  logger.debug("Context menu created.");
 });
 
 // 2. Add a listener to handle the click event
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "extract-free-time") {
-    console.log("Attempting to get Auth Token...");
+    logger.debug("Attempting to get Auth Token...");
     handleCopyFreetime();
   }
 });
@@ -32,7 +34,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 async function handleCopyFreetime() {
   chrome.identity.getAuthToken({ interactive: true }, async (token) => {
     if (chrome.runtime.lastError || !token) {
-      console.error("Auth failed:", chrome.runtime.lastError);
+      logger.error("Auth failed:", chrome.runtime.lastError);
       return;
     }
 
@@ -69,7 +71,7 @@ async function handleCopyFreetime() {
       const gaps = findGaps(busySlots, window.timeMin, window.timeMax);
       const output = formatGaps(gaps, timeZone, clickedDate);
 
-      console.log(output);
+      logger.debug(output);
       
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
@@ -80,7 +82,7 @@ async function handleCopyFreetime() {
       }
     });      
     } catch (err) {
-      console.error("Error fetching calendar data:", err);
+      logger.error("Error fetching calendar data:", err);
     }
   });
 }
@@ -92,7 +94,7 @@ async function getCalendarSettings(token) {
   });
   const data = await response.json();
   
-  console.log("Your Calendar Timezone:", data.timeZone);
+  logger.debug("Your Calendar Timezone:", data.timeZone);
   return data.timeZone; // e.g., "America/New_York"
 }
 
@@ -136,12 +138,12 @@ async function fetchFreeBusy(token, window) {
     const data = await response.json();
     const busySlots = data.calendars.primary.busy;
     
-    console.log("Success! Busy slots within your work window:");
+    logger.debug("Success! Busy slots within your work window:");
     console.table(busySlots);
     
     return busySlots;
   } catch (error) {
-    console.error("API Fetch failed:", error);
+    logger.error("API Fetch failed:", error);
   }
 }
 
