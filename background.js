@@ -250,3 +250,29 @@ function formatGaps(gaps, timeZone, targetDateStr) {
 
     return `Availability on ${friendlyDate}:\n${gapLines} (${tzName})`;
 }
+
+// Helper to toggle menu visibility
+function updateMenuVisibility(url) {
+  const isDayView = url && url.includes("/calendar/u/0/r/day/");
+  
+  chrome.contextMenus.update("extract-free-time", {
+    visible: isDayView
+  }, () => {
+    if (chrome.runtime.lastError) {
+      // Ignore errors if the menu hasn't been created yet
+    }
+  });
+}
+
+// Listen for URL changes within the same tab (SPA navigation)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    updateMenuVisibility(tab.url);
+  }
+});
+
+// Listen for when the user switches tabs
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  const tab = await chrome.tabs.get(activeInfo.tabId);
+  updateMenuVisibility(tab.url);
+});
