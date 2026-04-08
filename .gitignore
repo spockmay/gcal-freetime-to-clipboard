@@ -1,3 +1,7 @@
 *.pem
 .DS_Store
 node_modules/
+*.crx
+*.zip
+clean/
+releases/
