@@ -67,9 +67,9 @@ async function handleCopyFreetime() {
 
       // 4. Calculate the gaps
       const gaps = findGaps(busySlots, window.timeMin, window.timeMax);
-      const output = formatGaps(gaps);
+      const output = formatGaps(gaps, timeZone, clickedDate);
 
-      console.log("Final Availability:\n", output);
+      console.log(output);
       
       // TODO: Send 'output' to the clipboard via the Offscreen API or Content Script
       
@@ -207,12 +207,40 @@ function findGaps(busySlots, workStart, workEnd) {
     return freeSlots;
 }
 
-function formatGaps(gaps) {
+function formatGaps(gaps, timeZone, targetDateStr) {
     if (gaps.length === 0) return "No free time found during work hours.";
 
-    return gaps.map(gap => {
-        const start = new Date(gap.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        const end = new Date(gap.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        return `${start} - ${end}`;
+    // 1. Parse our YYYYMMDD string for the title
+    const year = parseInt(targetDateStr.substring(0, 4));
+    const month = parseInt(targetDateStr.substring(4, 6)) - 1;
+    const day = parseInt(targetDateStr.substring(6, 8));
+    const dateObj = new Date(year, month, day);
+
+    const friendlyDate = dateObj.toLocaleDateString([], { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+
+    // 2. Get the timezone abbreviation (e.g., "EDT")
+    const tzName = new Intl.DateTimeFormat('en-US', {
+        timeZone: timeZone,
+        timeZoneName: 'short'
+    }).formatToParts(new Date())
+      .find(p => p.type === 'timeZoneName').value;
+
+    // 3. Format the lines
+    const gapLines = gaps.map(gap => {
+        const options = { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: true, 
+            timeZone: timeZone 
+        };
+        const start = new Date(gap.start).toLocaleTimeString([], options);
+        const end = new Date(gap.end).toLocaleTimeString([], options);
+        return `* ${start} - ${end}`;
     }).join('\n');
+
+    return `Availability on ${friendlyDate}:\n${gapLines} (${tzName})`;
 }
