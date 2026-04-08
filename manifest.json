@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "GCal Freetime to Clipboard",
   "description": "Extracts free time slots from Google Calendar and copies them to the clipboard via right-click.",
-  "version": "0.1",
+  "version": "1.0.0",
   "permissions": [
     "identity",
     "contextMenus",
