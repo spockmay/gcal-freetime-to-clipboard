@@ -25,29 +25,56 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "extract-free-time") {
     console.log("Attempting to get Auth Token...");
-    getAuthToken();
+    handleCopyFreetime();
   }
 });
 
-// The helper function to handle the handshake
-function getAuthToken() {
+async function handleCopyFreetime() {
   chrome.identity.getAuthToken({ interactive: true }, async (token) => {
-    if (chrome.runtime.lastError) {
-      console.error("Auth failed:", chrome.runtime.lastError.message);
-    } else {
-      console.log("Authenticated. Fetching calendar data...");
-      // 1. Get the timezone first
-      const timeZone = await getCalendarSettings(token);
-      
-      // 2. Generate the window
-      const window = getWorkWindow(timeZone, clickedDate);
-      
-      // 3. Log the results to verify
-      console.log("Calculated Work Window (Local to ISO):");
-      console.log("Start (timeMin):", window.timeMin);
-      console.log("End (timeMax):", window.timeMax);    
+    if (chrome.runtime.lastError || !token) {
+      console.error("Auth failed:", chrome.runtime.lastError);
+      return;
+    }
 
-      await fetchFreeBusy(token, window);
+    try {
+      // 1. Get User Settings (Timezone is key for engineering precision)
+      const settingsResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/settings/timezone', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const settings = await settingsResponse.json();
+      const timeZone = settings.value;
+
+      // 2. Define the work window based on our global clickedDate
+      const window = getWorkWindow(timeZone, clickedDate);
+
+      // 3. Query the FreeBusy API
+      const response = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          timeMin: window.timeMin,
+          timeMax: window.timeMax,
+          timeZone: timeZone,
+          items: [{ id: 'primary' }]
+        })
+      });
+
+      const data = await response.json();
+      const busySlots = data.calendars.primary.busy;
+
+      // 4. Calculate the gaps
+      const gaps = findGaps(busySlots, window.timeMin, window.timeMax);
+      const output = formatGaps(gaps);
+
+      console.log("Final Availability:\n", output);
+      
+      // TODO: Send 'output' to the clipboard via the Offscreen API or Content Script
+      
+    } catch (err) {
+      console.error("Error fetching calendar data:", err);
     }
   });
 }
@@ -139,4 +166,53 @@ function calculateFreeSlots(busySlots) {
   }
 
   return freeSlots;
+}
+
+
+function findGaps(busySlots, workStart, workEnd) {
+    let freeSlots = [];
+    let currentTime = new Date(workStart);
+    const endTime = new Date(workEnd);
+
+    // 1. Sort busy slots by start time just in case
+    busySlots.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+    for (let slot of busySlots) {
+        let slotStart = new Date(slot.start);
+        let slotEnd = new Date(slot.end);
+
+        // If the meeting starts after our current pointer, we found a gap!
+        if (slotStart > currentTime && (new Date(slotStart) - currentTime) / (1000 * 60)>15) {
+            freeSlots.push({
+                start: currentTime.toISOString(),
+                end: slotStart.toISOString()
+            });
+        }
+
+        // Move the pointer to the end of this meeting 
+        // (but only if it moves us forward - handles overlapping events)
+        if (slotEnd > currentTime) {
+            currentTime = slotEnd;
+        }
+    }
+
+    // 2. Check for a final gap between the last meeting and end of work day
+    if (currentTime < endTime) {
+        freeSlots.push({
+            start: currentTime.toISOString(),
+            end: endTime.toISOString()
+        });
+    }
+
+    return freeSlots;
+}
+
+function formatGaps(gaps) {
+    if (gaps.length === 0) return "No free time found during work hours.";
+
+    return gaps.map(gap => {
+        const start = new Date(gap.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        const end = new Date(gap.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        return `${start} - ${end}`;
+    }).join('\n');
 }
