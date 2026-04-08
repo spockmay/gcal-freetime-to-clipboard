@@ -39,7 +39,7 @@ async function handleCopyFreetime() {
     }
 
     try {
-      // 1. Get User Settings (Timezone is key for engineering precision)
+      // 1. Get User Settings - Timezone
       const settingsResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/settings/timezone', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -108,10 +108,10 @@ function getWorkWindow(timeZone, targetDateStr) {
   // We use the string approach to ensure it anchors to the correct local day
   const dateBase = new Date(year, month, day);
   
-  // Create ISO strings for 9:00 AM and 5:00 PM on THAT day
+  // Create ISO strings for 8:00 AM and 5:00 PM on THAT day
   // Note: We use the browser's local time constructor here as it aligns 
-  // with your system's timezone (Ohio/Eastern)
-  const start = new Date(year, month, day, 9, 0, 0);
+  // with your system's timezone
+  const start = new Date(year, month, day, 8, 0, 0);
   const end = new Date(year, month, day, 17, 0, 0);
   
   return {
@@ -129,7 +129,7 @@ async function fetchFreeBusy(token, window) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        timeMin: window.timeMin, // Now using the calculated 9 AM
+        timeMin: window.timeMin, // Now using the calculated 8 AM
         timeMax: window.timeMax, // Now using the calculated 5 PM
         items: [{ id: 'primary' }] 
       })
