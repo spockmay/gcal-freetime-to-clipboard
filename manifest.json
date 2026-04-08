@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "GCal Freetime to Clipboard",
+  "description": "Extracts free time slots from Google Calendar and copies them to the clipboard via right-click.",
+  "version": "0.1",
+  "permissions": [
+    "identity",
+    "contextMenus",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://calendar.google.com/*",
+    "https://www.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "oauth2": {
+    "client_id": "558207973179-st52javm9ikd9uo9ld0gbs20o5lf1plj.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.readonly",
+      "https://www.googleapis.com/auth/calendar.freebusy"
+    ]
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
