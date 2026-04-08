@@ -1,4 +1,14 @@
 // background.js
+let clickedDate = null; // Our "state" variable
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "SET_TARGET_DATE") {
+    clickedDate = message.date; // Store "YYYYMMDD"
+    console.log("Global target date updated:", clickedDate);
+    sendResponse({ status: "captured" });
+  }
+  return true;
+});
 
 // 1. Create the right-click menu item when the extension is installed
 chrome.runtime.onInstalled.addListener(() => {
@@ -30,7 +40,7 @@ function getAuthToken() {
       const timeZone = await getCalendarSettings(token);
       
       // 2. Generate the window
-      const window = getWorkWindow(timeZone);
+      const window = getWorkWindow(timeZone, clickedDate);
       
       // 3. Log the results to verify
       console.log("Calculated Work Window (Local to ISO):");
@@ -53,18 +63,21 @@ async function getCalendarSettings(token) {
   return data.timeZone; // e.g., "America/New_York"
 }
 
-function getWorkWindow(timeZone) {
-  const now = new Date();
+function getWorkWindow(timeZone, targetDateStr) {
+  // targetDateStr is "20260415"
+  const year = parseInt(targetDateStr.substring(0, 4));
+  const month = parseInt(targetDateStr.substring(4, 6)) - 1; // 0-indexed
+  const day = parseInt(targetDateStr.substring(6, 8));
+
+  // Create a base date object for that specific day in the local timezone
+  // We use the string approach to ensure it anchors to the correct local day
+  const dateBase = new Date(year, month, day);
   
-  // Format the current date into your calendar's timezone
-  const localDateStr = now.toLocaleDateString('en-US', { timeZone });
-  
-  // Create 'Start' and 'End' times for today's work window
-  const start = new Date(localDateStr);
-  start.setHours(9, 0, 0, 0); // 9:00 AM
-  
-  const end = new Date(localDateStr);
-  end.setHours(17, 0, 0, 0); // 5:00 PM
+  // Create ISO strings for 9:00 AM and 5:00 PM on THAT day
+  // Note: We use the browser's local time constructor here as it aligns 
+  // with your system's timezone (Ohio/Eastern)
+  const start = new Date(year, month, day, 9, 0, 0);
+  const end = new Date(year, month, day, 17, 0, 0);
   
   return {
     timeMin: start.toISOString(),

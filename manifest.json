@@ -16,6 +16,12 @@
     "service_worker": "background.js",
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "matches": ["*://calendar.google.com/*"],
+      "js": ["content.js"]
+    }
+  ],  
   "oauth2": {
     "client_id": "558207973179-st52javm9ikd9uo9ld0gbs20o5lf1plj.apps.googleusercontent.com",
     "scopes": [
