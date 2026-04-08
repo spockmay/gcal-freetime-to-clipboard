@@ -17,3 +17,51 @@ document.addEventListener('contextmenu', () => {
     console.log("Not in Day View. Extension is currently optimized for Day View only.");
   }
 }, true);
+
+// content.js
+
+function showToast(message) {
+  // 1. Create the toast element
+  const toast = document.createElement('div');
+  toast.innerText = message;
+  
+  // 2. Style it (Modern, dark, and centered at the bottom)
+  Object.assign(toast.style, {
+    position: 'fixed',
+    bottom: '40px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: '#323232',
+    color: '#ffffff',
+    padding: '12px 24px',
+    borderRadius: '8px',
+    zIndex: '9999',
+    fontFamily: 'Roboto, Arial, sans-serif',
+    fontSize: '14px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    opacity: '0',
+    transition: 'opacity 0.3s ease'
+  });
+
+  document.body.appendChild(toast);
+
+  // 3. Fade in
+  setTimeout(() => { toast.style.opacity = '1'; }, 10);
+
+  // 4. Fade out and remove after 3 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "COPY_TO_CLIPBOARD") {
+    navigator.clipboard.writeText(request.text).then(() => {
+      showToast("Availability copied to clipboard!");
+    }).catch(err => {
+      showToast("Error copying to clipboard.");
+      console.error(err);
+    });
+  }
+});

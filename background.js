@@ -71,8 +71,14 @@ async function handleCopyFreetime() {
 
       console.log(output);
       
-      // TODO: Send 'output' to the clipboard via the Offscreen API or Content Script
-      
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+          type: "COPY_TO_CLIPBOARD",
+          text: output
+          });
+      }
+    });      
     } catch (err) {
       console.error("Error fetching calendar data:", err);
     }
